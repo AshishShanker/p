@@ -20,13 +20,13 @@ class MultiArmBandit:
         F = f.cumsum(dim=1)/self.points # dim (arms, points)
         F_bar = torch.prod(F,dim=0) # dim (points)
         G = (f * x).cumsum(dim=1)/self.points # dim (arms, points)
-        p_star = ((f * F_bar)/F).cumsum(dim=1)/self.points # dim (arms, points)
-        m_same_arm = (((x * f)/F) * F_bar).cumsum(dim=1)/(self.points * p_star)
-        m_different_arm = (((f * F_bar) / (F * F)) * G).cumsum(dim=1) / (self.points * p_star) 
+        p_star = ((f * F_bar)/F).sum(dim=1)/self.points # dim (arms, points)
+        m_same_arm = (((x * f)/F) * F_bar).sum(dim=1)/(self.points * p_star)
+        m_different_arm = (((f * F_bar) / (F * F)) * G).sum(dim=1) / (self.points * p_star) 
         maap = torch.where(torch.eye(self.arms) > 0, m_same_arm, m_different_arm)
-        rho_star = p_star * m_same_arm
-        delta = rho_star - (betas[0]/(betas[0] + betas[1]))
-        log_weighted_different_arm = m_different_arm * torch.log((betas[0] + betas[1])/betas[0]) +  (1-m_different_arm) * torch.log((1-m_different_arm) * ((betas[0] + betas[1])/betas[1]))
+        rho_star = torch.dot(p_star, m_same_arm)
+        delta = rho_star - (betas[:,0]/(betas[:,0] + betas[:,1]))
+        log_weighted_different_arm = m_different_arm * torch.log((betas[:,0] + betas[:,1])/betas[:,0]) +  (1-m_different_arm) * torch.log((1-m_different_arm) * ((betas[:,0] + betas[:,1])/betas[:,1]))
         g = p_star *  log_weighted_different_arm
         return delta, g
     
